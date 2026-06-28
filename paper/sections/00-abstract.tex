@@ -1,0 +1,25 @@
+\begin{abstract}
+Global household food waste continues to grow despite increasing
+awareness of its environmental and economic impact. Existing smart
+refrigerator and inventory systems typically focus on a single
+sensing modality and rarely combine product identification,
+environmental monitoring, and real-time mobile interaction in a
+single low-cost prototype. This work presents the
+\emph{Smart Inventory and Automated Food Tracking Module}, a cabinet
+prototype that integrates four HX711-amplified load cells for
+shelf-weight measurement, a DHT11 sensor for temperature and humidity,
+an MQ135 sensor for indicative gas observation, an ESP32-CAM module
+for QR-based product registration, and an LED illumination subsystem
+for improved camera readability. A Python serial-to-HTTP bridge
+exposes the Arduino Uno's sensor output as a local web endpoint
+consumed by a cross-platform Flutter mobile dashboard, which displays
+live readings, tracks registered products with expiration data, and
+generates alerts. A pixel-level RGB analysis routine provides a
+lightweight, transparent visual ripeness estimate for bananas without
+requiring machine-learning hardware. Demonstration sessions confirmed
+weight, environmental, identification, and visualization functions
+operating concurrently inside a single low-cost prototype. The work
+contributes a reproducible reference design and an honest set of
+limitations that we believe are useful both to follow-on research and
+to similar undergraduate-level prototyping efforts.
+\end{abstract}

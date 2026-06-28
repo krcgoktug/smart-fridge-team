@@ -1,0 +1,96 @@
+\section{Introduction}
+\label{sec:introduction}
+
+According to the United Nations Environment Programme, households
+account for the largest share of total food waste worldwide, with
+recent figures attributing more than 60\% of global food waste to the
+household stage of the supply chain~\cite{unep2024foodwaste}. Beyond
+its environmental cost, this loss directly inflates household
+expenditure on groceries, with FAO estimating the economic value of
+wasted food in the range of one trillion US dollars per year. Food
+that is purchased, refrigerated, then thrown away after spoiling is
+particularly costly because it has consumed packaging, transport, and
+cooling resources up to the point of disposal.
+
+The most common reasons for in-home food waste are well documented:
+users (i) forget what is already in the refrigerator,
+(ii) underestimate or misremember expiration dates, and
+(iii) only notice spoilage once a product has visually deteriorated.
+Manual logging applications exist, but their adoption is limited
+because they require disciplined data entry and do not give visibility
+into items already in storage.
+
+Several smart-refrigerator and inventory-monitoring approaches have
+been proposed in the literature to mitigate these issues.
+Camera-based product recognition systems can in principle identify
+items automatically but require trained classification models, generate
+substantial computational load on the edge device, and are sensitive to
+lighting and partial occlusion~\cite{ericyang2022smartfridge}.
+Radio-frequency identification (RFID) approaches eliminate the manual
+data-entry step but assume every monitored product carries a tag and
+require a reader installed in the storage area, which raises both unit
+cost and integration complexity~\cite{abhiram2025iotmonitor}.
+Barcode-based systems are inexpensive but inherently manual and assume
+unobstructed line of sight to a printed
+label~\cite{pelobello2026chickout}. Many recent prototypes focus on a
+single sensing dimension --- temperature, weight, or visual recognition
+--- and rarely fuse multiple modalities or expose a real-time mobile
+interface to the user~\cite{sarawathi2025spoilage,sarkar2024proactive}.
+
+This work proposes the \emph{Smart Inventory and Automated Food
+Tracking Module}, a low-cost prototype that addresses the limitations
+above by combining four complementary sensing modalities ---
+weight, temperature, humidity, gas, and visual --- with QR-based
+product registration and a real-time mobile interface in a single
+cabinet enclosure. An Arduino Uno serves as the primary microcontroller
+for the load-cell, DHT11, and MQ135 subsystems; an AI Thinker ESP32-CAM
+hosts a small HTTP server providing a live MJPEG feed and JPEG capture
+for QR scanning; a Python USB-serial bridge exposes the sensor stream
+as a local HTTP endpoint; and a cross-platform Flutter application
+visualizes the entire system, registers products, and surfaces alerts.
+
+\subsection*{Contributions}
+
+The principal contributions of this work are:
+
+\begin{itemize}
+  \item A self-contained, low-cost cabinet prototype that simultaneously
+        provides shelf-weight measurement, temperature and humidity
+        monitoring, indicative gas-trend monitoring, QR-based product
+        registration, and LED-assisted illumination, all coordinated
+        through a single Arduino Uno node and an auxiliary ESP32-CAM
+        node.
+  \item A Python USB-serial-to-HTTP bridge that exposes the Arduino
+        Uno's sensor output as a CORS-enabled local web endpoint,
+        eliminating the need for a Wi-Fi-capable sensor
+        microcontroller and enabling browser- and mobile-side
+        consumption without firmware changes.
+  \item A cross-platform Flutter mobile dashboard (Android and web
+        targets) with five screens --- Dashboard, Camera, Products,
+        Alerts, and Settings --- that integrates the bridge feed and
+        the camera's MJPEG stream, performs in-frame multi-QR
+        decoding, tracks products with expiration metadata, and emits
+        rule-based alerts.
+  \item A transparent, pixel-level RGB classifier for banana surface
+        spotting that runs on commodity hardware and reports a single
+        interpretable percentage --- an honest baseline against which
+        machine-learning-based approaches can be compared.
+  \item A complete, openly archived implementation (firmware,
+        bridge, application, and documentation), preserved in the
+        Software Heritage Archive with a persistent identifier so that
+        the prototype is reproducible by independent groups.
+\end{itemize}
+
+The remainder of this paper is organized as follows.
+Section~\ref{sec:relatedwork} reviews related work on smart-refrigerator
+and inventory systems and positions the proposed module against the
+state of the art. Section~\ref{sec:systemdesign} describes the
+high-level system architecture and the rationale for each subsystem
+choice. Section~\ref{sec:implementation} details the hardware
+configuration, firmware, USB-serial bridge, and mobile application.
+Section~\ref{sec:algorithms} presents the QR-handling, ripeness, and
+risk-score algorithms. Section~\ref{sec:results} reports qualitative
+results obtained during demonstration sessions.
+Section~\ref{sec:discussion} discusses the implications and the
+limitations that should be addressed in future work, and
+Section~\ref{sec:conclusion} concludes.

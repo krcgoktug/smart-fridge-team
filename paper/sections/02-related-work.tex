@@ -1,0 +1,144 @@
+\section{Related Work}
+\label{sec:relatedwork}
+
+This section reviews prior work along three axes that are relevant
+to the proposed prototype: smart product identification methods,
+sensor-based smart-refrigerator systems, and visual food-quality
+analysis. We then position the proposed module against these axes.
+
+\subsection{Smart Product Identification Methods}
+
+Product identification is a core component of any inventory-monitoring
+system. The literature has converged on three families of approaches:
+RFID, barcode-based, and camera-assisted methods.
+
+\textbf{RFID-based systems} eliminate manual data entry and can
+identify items even when partially occluded, which is attractive for
+refrigerator-style enclosures~\cite{abhiram2025iotmonitor}. The
+practical limitations are well documented: every monitored product
+must carry an RFID tag, a reader has to be installed inside the
+enclosure, and the per-unit cost of tags and reader hardware is
+non-trivial for household-scale prototypes. In Türkiye's retail
+context, refrigerated household goods are rarely pre-tagged with RFID,
+which makes the approach impractical without manual re-tagging by the
+end user --- arguably worse than the manual-entry problem it was
+meant to solve.
+
+\textbf{Barcode-based systems} are cheap and ubiquitous because
+barcodes are already printed on most packaged products. However,
+barcodes require careful alignment with a scanner, are sensitive to
+crumpling and condensation, and frequently sit on the package face
+that ends up against the back of the refrigerator
+shelf~\cite{pelobello2026chickout}. As a result, daily-use barcode
+systems either tend to be abandoned by their users or require an
+additional manual "rescan" step that defeats the purpose of
+automation.
+
+\textbf{Camera-based recognition} methods identify products through
+on-shelf images using either generic image classifiers or trained
+domain-specific models~\cite{ericyang2022smartfridge,vadlamudi2025fridgesense}.
+These approaches can in principle reach high accuracy but pay for it
+in three ways: they require large training datasets that often do not
+exist for regional product brands, they consume significant compute
+either on the edge device or via a cloud round-trip, and their
+behavior degrades quickly when lighting or product packaging changes.
+Several authors note that classifier confidence drops substantially
+when fewer than ten frames per product are available for training,
+which is the realistic case for household
+deployments~\cite{vadlamudi2025fridgesense}.
+
+A summary comparison of these methods alongside the proposed
+QR-based approach is given in Table~\ref{tab:identification-methods}.
+
+\begin{table*}[t]
+\caption{Comparison of product identification methods in smart inventory systems.}
+\label{tab:identification-methods}
+\centering
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+\textbf{Method} & \textbf{Automation} &
+\textbf{Required hardware} & \textbf{Per-unit cost} &
+\textbf{Data capacity per identifier} \\
+\midrule
+RFID                  & High        & RFID tags + reader & High & Medium \\
+Barcode               & Low         & Barcode scanner    & Low  & Low \\
+QR-based identification & Medium--High & Camera module    & Low  & High \\
+\textbf{Proposed (QR + ESP32-CAM)} & \textbf{High} &
+\textbf{ESP32-CAM} & \textbf{Low} & \textbf{High} \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\subsection{Sensor-Based Smart-Refrigerator Systems}
+
+A second family of related work concerns sensor instrumentation of the
+storage enclosure itself. Goel \emph{et al.} present a prototype
+combining a small camera with weight sensors to identify shopping
+needs and partially log inventory~\cite{goel2023iotfridge}. Sarkar
+\emph{et al.}~\cite{sarkar2024proactive} extend this idea with
+proactive notifications based on consumption patterns. Shetty and
+Shetty propose an IoT-monitored food-storage system that emphasizes
+environmental conditions~\cite{shetty2024monitoring}. Nandini
+\emph{et al.}~\cite{nandini2023userconvenience} explore the same
+problem domain through the lens of usability improvements to the
+refrigerator interface.
+
+Despite this body of work, most published prototypes optimize for one
+sensing modality at a time. Combinations of weight tracking,
+environmental sensing, and automatic product identification within a
+single low-cost reference design are rare in the open
+literature~\cite{sarawathi2025spoilage}. The present work is positioned
+explicitly to fill this gap: a single Arduino~Uno node coordinating
+weight, temperature, humidity, and gas-trend monitoring; an auxiliary
+ESP32-CAM node for QR scanning and visual ripeness analysis; and a
+unified mobile interface that exposes every measurement and event in
+real time.
+
+\subsection{Visual Food-Quality Analysis}
+
+A third strand of related work addresses the analysis of visual
+spoilage indicators, of which banana browning is a common benchmark
+because the surface color of bananas changes predictably with
+ripeness. The dominant approach in the recent literature is
+convolutional neural network (CNN) classification using transfer
+learning from large-scale visual
+backbones~\cite{vadlamudi2025fridgesense}. CNNs can reach high
+accuracy on representative test sets but require significant
+training data, edge-side compute, or a cloud connection --- none of
+which are attractive for low-budget household prototypes that must
+also operate on intermittent Wi-Fi.
+
+The proposed module instead uses a deliberately simple, fully
+interpretable pixel-level RGB analysis to estimate the visible
+"spotting percentage" of a banana surface. This approach trades a
+small accuracy gap (relative to CNN-based detectors) for transparency,
+zero training data requirements, and execution times of a few
+milliseconds on a midrange smartphone. It is intended as an
+\emph{honest baseline} that can be replaced by a CNN model in future
+work, while still providing useful information out of the box.
+
+\subsection{Positioning of the Proposed Module}
+
+In summary, the proposed Smart Inventory and Automated Food Tracking
+Module differs from prior art in four respects:
+
+\begin{enumerate}
+  \item It \emph{combines} four sensing modalities --- weight,
+        temperature/humidity, gas trend, and visual --- inside a single
+        low-cost cabinet, rather than focusing on a single dimension.
+  \item It uses \emph{QR-based} product registration with an ESP32-CAM,
+        which is markedly cheaper than RFID and more reliable than
+        barcode scanning in cabinet conditions.
+  \item It exposes \emph{real-time mobile} visibility through a
+        cross-platform Flutter application backed by a small Python
+        bridge, removing the need for a Wi-Fi-capable
+        microcontroller on the sensor side.
+  \item It provides a \emph{transparent, interpretable} visual-ripeness
+        baseline that does not require machine-learning infrastructure,
+        which we believe is the right starting point for a reference
+        design intended for educational and reproducibility use.
+\end{enumerate}
+
+The remaining sections describe the system design, implementation, and
+qualitative evaluation in detail.

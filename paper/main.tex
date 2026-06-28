@@ -1,0 +1,100 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{booktabs}
+\hypersetup{colorlinks=true,linkcolor=blue,urlcolor=blue,citecolor=blue}
+
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  breaklines=true,
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  frame=single,
+  framesep=2pt,
+  showstringspaces=false,
+  columns=fullflexible,
+}
+
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+\begin{document}
+
+\title{Smart Inventory and Automated Food Tracking Module for Zero-Waste
+       Household Food Management}
+
+\author{
+\IEEEauthorblockN{
+  Göktuğ Karaca\textsuperscript{1,*},
+  Sıla Özgel\textsuperscript{1,*},
+  Ezgi Erdoğan\textsuperscript{1,*},\\
+  Hilal Bizimyer\textsuperscript{1},
+  Defne Kaya\textsuperscript{1},
+  Nehir Okutur\textsuperscript{1},
+  Züleyha Gönül\textsuperscript{1},
+  Ece Simay Ayverdi\textsuperscript{1}
+}
+\IEEEauthorblockA{\textsuperscript{1}\textit{Department of Computer Engineering}\\
+\textit{Fenerbahçe University}\\
+Istanbul, Türkiye\\
+\textit{Corresponding author:} karacagoktug73@gmail.com\\
+\textsuperscript{*}\textit{Joint first authors --- equal contribution}}
+}
+
+\maketitle
+
+\input{sections/00-abstract}
+
+\begin{IEEEkeywords}
+Smart refrigerator, food waste reduction, Internet of Things,
+embedded systems, Arduino Uno, ESP32-CAM, HX711 load cell, DHT11,
+MQ135, QR code recognition, mobile application, banana ripeness
+detection.
+\end{IEEEkeywords}
+
+\input{sections/01-introduction}
+\input{sections/02-related-work}
+\input{sections/03-system-design}
+\input{sections/04-implementation}
+\input{sections/05-algorithms}
+\input{sections/06-results}
+\input{sections/07-discussion}
+\input{sections/08-conclusion}
+
+\section*{Author Contributions}
+\input{sections/09-author-contributions}
+
+\section*{Data and Code Availability}
+The complete source code, firmware, and mobile-application implementation
+described in this paper are publicly archived. The state of the codebase
+at the end of the lead author's principal development period is preserved
+under the tag \texttt{v1.0-goktug-final-contribution} and independently
+mirrored in the Software Heritage Archive (UNESCO) with the persistent
+identifier:
+\begin{center}
+\texttt{swh:1:snp:6de23248993c6626ef0a9776d6816fe9b2a9b3d1}
+\end{center}
+A snapshot of the dispute-free public surface remains at the original
+repository for community reference. Evidence assets (timestamps and
+cryptographic hashes) are preserved with paired OpenTimestamps
+(Bitcoin-blockchain) proofs.
+
+\section*{Acknowledgments}
+The authors thank the Department of Computer Engineering, Fenerbahçe
+University, for providing the laboratory environment and components used
+during prototype development. The authors received no external funding
+for the work described in this paper.
+
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+\end{document}
