@@ -1,108 +1,94 @@
 \section{Discussion and Limitations}
 \label{sec:discussion}
 
-The demonstration sessions reported in Section~\ref{sec:results}
-support several broader observations about the proposed module.
+The demonstration sessions described in Section~\ref{sec:results}
+support several broader observations.
 
-\subsection{What the Prototype Demonstrates}
+\subsection{Observations}
 
-The integrated prototype demonstrates that a single low-cost
-microcontroller node, paired with a small Python bridge and a
-cross-platform Flutter application, can deliver continuous visibility
-into the four sensing modalities that smart-refrigerator systems most
-often address: weight, temperature/humidity, gas trend, and visual
-ripeness. The architectural separation between the sensor node (an
-Arduino Uno with no networking responsibilities) and the camera node
-(an ESP32-CAM with no sensing responsibilities) kept the firmware on
-each device simple and self-contained, which is valuable both for
-educational use and for follow-on research that wishes to replace
-individual subsystems without disturbing the rest.
-
-The end-to-end latency, observed during the bridge-log window in
-Section~\ref{sec:results}, was well below one second between a sensor
-reading appearing on the Arduino's serial port and the corresponding
-update propagating into the Flutter Dashboard. This margin is more
-than adequate for an inventory-monitoring use case where the
-underlying physical processes evolve over minutes to days.
+The integrated prototype confirms that a single low-cost
+microcontroller node, when paired with a small Python bridge and a
+cross-platform mobile application, can deliver continuous visibility
+into the four sensing modalities most often addressed by
+smart-refrigerator systems. The architectural separation of the
+sensor node from the camera node simplifies firmware on either side
+and allows individual subsystems to be replaced without disturbing
+the rest. The observed end-to-end latency, measured from the
+Arduino's serial output to the corresponding update in the Flutter
+Dashboard, was below one second; this margin is more than adequate
+for inventory-monitoring use cases in which the underlying physical
+processes evolve over minutes to days.
 
 \subsection{Comparison with Related Work}
 
 Relative to camera-only smart-refrigerator
 systems~\cite{ericyang2022smartfridge,vadlamudi2025fridgesense}, the
-proposed prototype does not depend on a trained product classifier
-and therefore avoids the dataset and inference burden that such
-systems carry. Relative to RFID-based
-approaches~\cite{abhiram2025iotmonitor}, the proposed system does not
-require per-product tagging or a reader installed in the cabinet, and
-the per-product identification cost reduces to the cost of printing a
-small QR sticker. Relative to systems that focus on a single sensing
-modality~\cite{sarawathi2025spoilage,sarkar2024proactive,shetty2024monitoring},
-the proposed module combines four modalities and exposes them
-together through the same mobile interface, which improves
-multi-channel awareness of the cabinet's state.
+proposed prototype does not depend on a trained classifier and
+avoids the associated dataset and inference cost. Relative to
+RFID-based approaches~\cite{abhiram2025iotmonitor}, the proposed
+system does not require per-product tagging or a cabinet-mounted
+reader; per-product identification cost reduces to a printed
+sticker. Relative to single-modality
+prototypes~\cite{sarawathi2025spoilage,sarkar2024proactive,shetty2024monitoring},
+the proposed system combines four modalities and exposes them
+together through one mobile interface, which increases the
+operator's awareness of cabinet state.
 
 \subsection{Limitations}
 
-A number of limitations of the current implementation should be
-acknowledged honestly:
+\subsubsection{Lightweight-product sensitivity}
+The load-cell subsystem is more reliable for items with a stable
+bearing surface and a mass of approximately 50\,g or greater. Lighter
+objects are sometimes missed or generate spurious events because
+their signal falls within the noise band introduced by ambient
+vibration and load-cell creep. A more rigid shelf, higher-grade load
+cells, and a longer running-average filter would improve sensitivity
+at the cost of some responsiveness.
 
-\paragraph{Lightweight-product sensitivity}
-The load-cell subsystem is more reliable for products with a stable
-bearing surface and a mass of approximately 50~g or greater. Very
-light objects can be missed or generate noisy events because their
-signal falls inside the noise band produced by ambient vibration and
-load-cell creep. A more rigid shelf, a higher-grade load cell, and a
-running average filter with a longer window would improve this, at
-some cost in responsiveness.
+\subsubsection{MQ135 baseline drift}
+The MQ135 is useful as a trend indicator but does not provide
+calibrated gas-concentration measurements. Its baseline drifts during
+the first 30--60\,s after power-on. The firmware absorbs the
+transient through an exponential moving average and the bridge
+exposes a runtime endpoint that resets the baseline on demand. No
+absolute concentration claims are made.
 
-\paragraph{MQ135 baseline drift}
-The MQ135 is a useful trend indicator but not a calibrated
-gas-concentration sensor. Its baseline drifts significantly during the
-first 30--60~seconds after power-on, which the firmware absorbs with
-an exponential moving average and which the user can reset at runtime
-through the \texttt{/recalibrate\_gas} endpoint. We do not claim
-absolute gas concentrations, and any inference about spoilage based
-on MQ135 trends should be cross-checked with other channels.
+\subsubsection{Visual classifier scope}
+The pixel-level classifier targets bananas only. Extending it to
+other fruits would require revisiting the colour thresholds;
+extending it to general food categories would benefit from a learned
+model, which is a natural avenue for follow-on work. Sensitivity to
+ambient lighting variation is partially mitigated by the LED-strip
+illumination but remains a known constraint.
 
-\paragraph{Visual classifier scope}
-The pixel-level RGB classifier is intentionally simple and is
-implemented for bananas only. Extending it to other fruits would
-require revisiting the color thresholds; extending it to general food
-items would benefit from a learned model, which is a natural avenue
-for follow-on work. Lighting variations inside the cabinet affect
-classifier sensitivity, although the LED-strip illumination
-substantially reduces this effect.
+\subsubsection{Wi-Fi-only camera coupling}
+The ESP32-CAM is reachable only when both the bridge host and the
+camera share a local network. Deployments that cross network
+boundaries would require either an SSH tunnel, a port forward, or a
+Firebase-mediated relay. The Settings screen exposes the camera IP
+explicitly so that the deployment can be reconfigured without
+recompilation.
 
-\paragraph{Wi-Fi-only camera coupling}
-The ESP32-CAM is reachable only when both the host running the
-bridge and the camera are on the same local network. A field
-deployment outside the local network would require either an SSH
-tunnel, a port-forward, or a Firebase-mediated relay. The mobile
-application's Settings screen exposes the camera IP precisely so that
-the deployment can be reconfigured for different network topologies
-without recompilation.
+\subsubsection{Single-shelf prototype}
+The reported prototype monitors one shelf. Multi-shelf operation
+requires additional HX711 modules, each on its own \texttt{DT}/\texttt{SCK}
+pin pair, or a chip-select arrangement. The firmware and bridge
+changes required to scale to multiple shelves are minor but were
+outside the scope of this demonstration.
 
-\paragraph{Single-cabinet, single-shelf prototype}
-The prototype monitors a single shelf. Extending to multiple shelves
-requires either additional load-cell-and-HX711 pairs (each on its own
-\texttt{DT/SCK} pin pair) or a chip-select mechanism. The firmware
-and bridge changes required are modest but were out of scope for the
-current prototype.
+\subsubsection{Firebase ships disabled}
+The Flutter application carries a Firebase Realtime Database
+integration that is wired in code but ships with placeholder
+credentials. The deployed build operates in an in-memory mode by
+default, which preserves reproducibility in environments without an
+external Firebase project. A production deployment would replace the
+placeholder \texttt{firebase\_options.dart} with credentials
+obtained through \texttt{flutterfire configure}.
 
-\paragraph{Firebase integration ships disabled}
-The application has a Firebase Realtime Database integration that is
-wired in code but ships with placeholder credentials, so the deployed
-build operates in an in-memory mode by default. This is an explicit
-design choice to keep the prototype reproducible without an external
-account; the in-memory state survives in-session use but is reset when
-the application restarts. A production deployment would replace the
-placeholder \texttt{firebase\_options.dart} with credentials obtained
-through \texttt{flutterfire configure}.
-
-\paragraph{Demonstration-scale evaluation}
-The results reported in Section~\ref{sec:results} are obtained from
-prototype-level demonstration sessions and not from controlled
-longitudinal deployments. We position this work as a reproducible
-reference design and an honest baseline rather than a finished
-clinical-grade evaluation, and we believe both contributions are
-useful at this stage of the design space.
+\subsubsection{Demonstration-scale evaluation}
+The reported results were obtained from prototype-level
+demonstration sessions rather than from controlled longitudinal
+deployments. This work is positioned as a reproducible reference
+design and a documented qualitative baseline rather than as a
+finished evaluation; closing this gap is a natural direction for
+future work.

@@ -6,22 +6,21 @@
 \usepackage{graphicx}
 \usepackage{textcomp}
 \usepackage{xcolor}
-\usepackage{hyperref}
-\usepackage{listings}
-\usepackage{multirow}
-\usepackage{array}
 \usepackage{booktabs}
-\hypersetup{colorlinks=true,linkcolor=blue,urlcolor=blue,citecolor=blue}
+\usepackage{listings}
+\usepackage{array}
+\usepackage{url}
 
 \lstset{
   basicstyle=\ttfamily\footnotesize,
   breaklines=true,
-  numbers=left,
-  numberstyle=\tiny\color{gray},
+  numbers=none,
   frame=single,
   framesep=2pt,
   showstringspaces=false,
   columns=fullflexible,
+  belowskip=4pt,
+  aboveskip=4pt
 }
 
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
@@ -29,36 +28,64 @@
 
 \begin{document}
 
-\title{Smart Inventory and Automated Food Tracking Module for Zero-Waste
-       Household Food Management}
+\title{A Multi-Modal Cabinet Prototype for Household Food-Waste
+       Reduction Combining Weight, Environmental, Gas, and Visual
+       Monitoring}
 
-\author{
-\IEEEauthorblockN{
-  Göktuğ Karaca\textsuperscript{1,*},
-  Sıla Özgel\textsuperscript{1,*},
-  Ezgi Erdoğan\textsuperscript{1,*},\\
-  Hilal Bizimyer\textsuperscript{1},
-  Defne Kaya\textsuperscript{1},
-  Nehir Okutur\textsuperscript{1},
-  Züleyha Gönül\textsuperscript{1},
-  Ece Simay Ayverdi\textsuperscript{1}
-}
-\IEEEauthorblockA{\textsuperscript{1}\textit{Department of Computer Engineering}\\
-\textit{Fenerbahçe University}\\
-Istanbul, Türkiye\\
-\textit{Corresponding author:} karacagoktug73@gmail.com\\
-\textsuperscript{*}\textit{Joint first authors --- equal contribution}}
+\author{%
+\IEEEauthorblockN{Göktuğ Karaca\IEEEauthorrefmark{1}}
+\IEEEauthorblockA{\textit{Dept.\ of Computer Engineering} \\
+\textit{Fenerbahçe University} \\
+Istanbul, Türkiye \\
+karacagoktug73@gmail.com}
+\and
+\IEEEauthorblockN{Sıla Özgel\IEEEauthorrefmark{1}}
+\IEEEauthorblockA{\textit{Dept.\ of Computer Engineering} \\
+\textit{Fenerbahçe University} \\
+Istanbul, Türkiye}
+\and
+\IEEEauthorblockN{Ezgi Erdoğan\IEEEauthorrefmark{1}}
+\IEEEauthorblockA{\textit{Dept.\ of Computer Engineering} \\
+\textit{Fenerbahçe University} \\
+Istanbul, Türkiye}
+\and
+\IEEEauthorblockN{Hilal Bizimyer}
+\IEEEauthorblockA{\textit{Dept.\ of Computer Engineering} \\
+\textit{Fenerbahçe University} \\
+Istanbul, Türkiye}
+\and
+\IEEEauthorblockN{Defne Kaya}
+\IEEEauthorblockA{\textit{Dept.\ of Computer Engineering} \\
+\textit{Fenerbahçe University} \\
+Istanbul, Türkiye}
+\and
+\IEEEauthorblockN{Nehir Okutur}
+\IEEEauthorblockA{\textit{Dept.\ of Computer Engineering} \\
+\textit{Fenerbahçe University} \\
+Istanbul, Türkiye}
+\and
+\IEEEauthorblockN{Züleyha Gönül}
+\IEEEauthorblockA{\textit{Dept.\ of Computer Engineering} \\
+\textit{Fenerbahçe University} \\
+Istanbul, Türkiye}
+\and
+\IEEEauthorblockN{Ece Simay Ayverdi}
+\IEEEauthorblockA{\textit{Dept.\ of Computer Engineering} \\
+\textit{Fenerbahçe University} \\
+Istanbul, Türkiye}
 }
 
 \maketitle
 
+\renewcommand{\IEEEauthorrefmark}[1]{\textsuperscript{#1}}
+\thanks{\IEEEauthorrefmark{1}Joint first authors with equal contribution. Corresponding author: Göktuğ Karaca.}
+
 \input{sections/00-abstract}
 
 \begin{IEEEkeywords}
-Smart refrigerator, food waste reduction, Internet of Things,
-embedded systems, Arduino Uno, ESP32-CAM, HX711 load cell, DHT11,
-MQ135, QR code recognition, mobile application, banana ripeness
-detection.
+smart refrigerator, food-waste reduction, Internet of Things,
+embedded systems, Arduino, ESP32-CAM, HX711, load cell, QR
+recognition, Flutter, mobile application
 \end{IEEEkeywords}
 
 \input{sections/01-introduction}
@@ -73,26 +100,19 @@ detection.
 \section*{Author Contributions}
 \input{sections/09-author-contributions}
 
-\section*{Data and Code Availability}
-The complete source code, firmware, and mobile-application implementation
-described in this paper are publicly archived. The state of the codebase
-at the end of the lead author's principal development period is preserved
-under the tag \texttt{v1.0-goktug-final-contribution} and independently
-mirrored in the Software Heritage Archive (UNESCO) with the persistent
-identifier:
-\begin{center}
-\texttt{swh:1:snp:6de23248993c6626ef0a9776d6816fe9b2a9b3d1}
-\end{center}
-A snapshot of the dispute-free public surface remains at the original
-repository for community reference. Evidence assets (timestamps and
-cryptographic hashes) are preserved with paired OpenTimestamps
-(Bitcoin-blockchain) proofs.
+\section*{Data Availability}
+The complete firmware, USB-serial bridge, mobile-application source,
+and accompanying documentation discussed in this paper are publicly
+archived. The codebase state corresponding to the experimental
+sessions reported in Section~\ref{sec:results} is preserved under the
+git tag \texttt{v1.0-goktug-final-contribution} and independently
+mirrored in the Software Heritage Archive with the persistent
+identifier \mbox{\texttt{swh:1:snp:6de23248993c6626ef0a9776}}
+\mbox{\texttt{d6816fe9b2a9b3d1}}.
 
-\section*{Acknowledgments}
+\section*{Acknowledgment}
 The authors thank the Department of Computer Engineering, Fenerbahçe
-University, for providing the laboratory environment and components used
-during prototype development. The authors received no external funding
-for the work described in this paper.
+University, for laboratory access during prototype assembly.
 
 \bibliographystyle{IEEEtran}
 \bibliography{references}

@@ -1,148 +1,132 @@
 \section{Algorithms}
 \label{sec:algorithms}
 
-Three algorithms drive the proposed module's higher-level behavior.
-The first is a tiled multi-QR decoder that recovers more than one QR
-sticker from a single camera frame
-(Section~\ref{sec:algo-qr}). The second is a transparent pixel-level
-RGB classifier that estimates banana spotting percentage from a JPEG
-capture (Section~\ref{sec:algo-banana}). The third is the per-product
-risk-score model that combines all sensing channels into a single
-0--100 freshness indicator (Section~\ref{sec:algo-risk}).
+Three algorithms govern the prototype's higher-level behaviour: a
+tiled multi-QR recognition routine that recovers several stickers
+from a single camera capture (Section~\ref{sec:algo-qr}); a
+pixel-level RGB classifier that estimates banana surface spotting
+percentage (Section~\ref{sec:algo-banana}); and a per-product risk
+score that combines all sensing channels into a single 0--100
+indicator (Section~\ref{sec:algo-risk}).
 
-\subsection{Multi-QR Tiled Decoder}
+\subsection{Tiled Multi-QR Recognition}
 \label{sec:algo-qr}
 
-A naïve single-pass QR decoder applied to a single JPEG capture from
-the ESP32-CAM typically recovers at most one QR symbol per frame,
-because most open-source decoders return on the first successful
-detection. In a smart-cabinet setting this is suboptimal: several
-products can be visible simultaneously, and forcing the user to scan
-them one at a time defeats the purpose of automatic registration.
+A single-pass QR decoder applied to a typical ESP32-CAM capture
+returns at most one symbol per frame because most open-source
+decoders terminate on first success. In a cabinet setting several
+items can be visible simultaneously, so registering them one at a
+time defeats the purpose of automatic identification.
 
-We implement a multi-QR pipeline that operates on a single capture.
-The pipeline tiles the frame into a $3 \times 3$ grid of overlapping
-windows, decodes each tile independently, and accumulates the union of
-the recovered payloads. Concretely:
+The proposed multi-QR routine operates on a single camera capture.
+The input frame is downscaled to 480\,px on its longer edge to bound
+per-pass runtime. A 3\,$\times$\,3 grid of overlapping windows is
+produced; each window covers approximately 45\,\% of the frame width
+and height with a 25\,\% overlap between neighbours. Under this
+geometry any QR symbol that fits in a 45\,\% region is fully
+contained in at least one window. Each window is passed independently
+to a portable QR decoder (\texttt{zxing2} on the web target and
+\texttt{qr\_code\_scanner} on the Android target), and decoded
+payloads are deduplicated by parsed JSON \texttt{productId} into a
+session set, so that a sticker present in two overlapping windows is
+registered exactly once.
 
-\begin{enumerate}
-  \item The captured JPEG is downscaled to 480~px on its longer edge
-        to bound the decoder's per-pass runtime.
-  \item Nine overlapping windows are produced: each window covers
-        $\sim\!45\%$ of the frame width and height with a 25\% overlap
-        between neighbors, which guarantees that any QR fitting in a
-        $\sim\!45\%$ region is fully contained in at least one window.
-  \item Each window is passed to a portable QR decoder (\texttt{zxing2}
-        on the web target, \texttt{qr\_code\_scanner} on the Android
-        target). The decoder returns zero or more payloads per window.
-  \item Decoded payloads are deduplicated by parsed JSON
-        \texttt{productId} and inserted into a session set, so that a
-        sticker physically present in two overlapping windows is
-        registered exactly once.
-\end{enumerate}
+End-to-end runtime remains under 200\,ms per frame on a midrange
+Android device. The routine trades a small amount of redundant
+decoding work for substantially higher coverage of multi-product
+scenes.
 
-The pipeline runs in less than 200~ms per frame on a midrange Android
-device. We trade a small amount of redundant decoding work for
-substantially higher coverage of multi-product scenes.
-
-\subsection{Pixel-Level RGB Banana Ripeness Classifier}
+\subsection{Pixel-Level RGB Ripeness Estimation}
 \label{sec:algo-banana}
 
 Visible browning is a strong qualitative indicator of late-stage
-banana ripeness. Rather than train a CNN to classify ripeness ---
-which would require a curated dataset, hardware-accelerated inference,
-or a cloud round-trip --- we implement a transparent pixel-level RGB
-analysis that runs in a few milliseconds on commodity hardware and
-returns a single interpretable percentage.
+banana ripeness. Rather than training a convolutional model, the
+prototype performs a transparent pixel-level RGB analysis that runs
+in a few milliseconds on commodity hardware and yields a single
+percentage.
 
-Given a JPEG capture $I$ in sRGB space, the classifier first segments
-the banana surface from the background:
+Given a JPEG capture $I$ in the sRGB colour space, the classifier
+first partitions pixels into four classes:
+
 \begin{align*}
-\mathcal{B}_{\text{yellow}} &= \{(r, g, b) :
-    r > 150 \land g > 130 \land b < 110\} \\
-\mathcal{B}_{\text{brown}}  &= \{(r, g, b) :
-    100 \leq r \leq 200 \land 50 \leq g \leq 130
-    \land b < 90\} \\
-\mathcal{B}_{\text{dark}}   &= \{(r, g, b) :
-    r < 90 \land g < 80 \land b < 70\} \\
-\mathcal{B}_{\text{bg}}     &= \{(r, g, b) : r > 220 \land g > 220
-    \land b > 220\}.
+\mathcal{B}_{\text{yellow}} &= \{(r, g, b) : r > 150 \land g > 130 \land b < 110\}, \\
+\mathcal{B}_{\text{brown}}  &= \{(r, g, b) : 100 \leq r \leq 200 \\
+                            & \quad \land 50 \leq g \leq 130 \land b < 90\}, \\
+\mathcal{B}_{\text{dark}}   &= \{(r, g, b) : r < 90 \land g < 80 \land b < 70\}, \\
+\mathcal{B}_{\text{bg}}     &= \{(r, g, b) : r > 220 \land g > 220 \land b > 220\}.
 \end{align*}
 
-Each pixel of $I$ is assigned to whichever set it falls in (or to
-\emph{undecided} if none). Let
-$n_y$, $n_b$, $n_d$ be the pixel counts for yellow, brown, and dark
-respectively. The reported \emph{spot coverage} is
+Each pixel of $I$ is assigned to whichever class contains it. Let
+$n_y$, $n_b$, $n_d$ denote pixel counts for yellow, brown, and dark
+respectively. The reported spot coverage is
+
 \begin{equation}
-\sigma = \frac{n_b + n_d}{\max(n_y + n_b + n_d, \, 1)} \cdot 100\%
+\sigma = \frac{n_b + n_d}{\max(n_y + n_b + n_d, \, 1)} \cdot 100\,\%,
+\label{eq:sigma}
 \end{equation}
-and the reported \emph{stage} is
+
+and the reported ripeness stage is
+
 \begin{equation}
 \text{stage}(\sigma) =
 \begin{cases}
-\text{Fresh}     & \text{if } \sigma <  10\% \\
-\text{Spotting}  & \text{if } 10\% \leq \sigma < 40\% \\
-\text{Spoiling}  & \text{if } 40\% \leq \sigma < 70\% \\
-\text{Spoiled}   & \text{if } \sigma \geq 70\%.
+\text{Fresh}     & \text{if } \sigma <  10\,\% \\
+\text{Spotting}  & \text{if } 10\,\% \leq \sigma < 40\,\% \\
+\text{Spoiling}  & \text{if } 40\,\% \leq \sigma < 70\,\% \\
+\text{Spoiled}   & \text{if } \sigma \geq 70\,\%.
 \end{cases}
+\label{eq:stage}
 \end{equation}
 
-The classifier reports both the percentage and the stage label
-(Figure~\ref{fig:app}b shows a representative output of
-$\sigma = 30.6\%$, labeled \emph{Spotting}). We deliberately avoid
-hidden state across frames: each capture is classified independently,
-which makes the output reproducible from the captured image alone and
-serves as a transparent baseline against which future
-machine-learning--based detectors can be compared.
+The classifier maintains no state across frames; each capture is
+processed independently, which yields outputs that are reproducible
+from the captured image alone. A representative output of
+$\sigma = 30.6\,\%$, labelled \emph{Spotting}, is shown in
+Fig.~\ref{fig:app}(b).
 
 \subsection{Per-Product Risk Score}
 \label{sec:algo-risk}
 
-The per-product risk score $R \in [0, 100]$ combines six channels:
-expiration time remaining, ambient temperature, ambient humidity, gas
-trend, visible spotting (for products supporting visual analysis),
-and weight change rate. The score is bounded at $100$ and partitioned
-into three bands for display:
-\begin{itemize}
-  \item \textbf{Fresh} \ for $R < 40$,
-  \item \textbf{Consume Soon} \ for $40 \leq R < 70$,
-  \item \textbf{Spoilage Risk} \ for $R \geq 70$.
-\end{itemize}
+A per-product risk score $R \in [0, 100]$ combines six channels:
+expiration time remaining, ambient temperature, ambient humidity,
+gas trend, visible spotting, and weight-change rate. The score is
+capped at 100 and partitioned into three display bands: Fresh
+($R < 40$), Consume Soon ($40 \leq R < 70$), and Spoilage Risk
+($R \geq 70$).
 
-Concretely, given a product $p$ with metadata stored in the in-memory
-product store, the risk score is computed as
+For a product $p$, the score is computed as
+
 \begin{equation}
-R(p) = \min(100, \,
-   r_{\text{exp}}(p) + r_T + r_H + r_G + r_V(p) + r_W(p)),
+R(p) = \min\!\bigl(100,\, r_{\text{exp}}(p) + r_T + r_H + r_G + r_V(p) + r_W(p)\bigr),
+\label{eq:risk}
 \end{equation}
-where each term is a per-channel risk contribution, capped between
-$0$ and a per-channel maximum, and rounded down to the nearest integer.
+
+where each contribution is bounded by a per-channel maximum and
+rounded down to the nearest integer:
+
 \begin{itemize}
-  \item $r_{\text{exp}}$ is $0$ when the expiration date is more than
-        a week away, ramps to $40$ when the product reaches its
-        expiration date, and pins at $40$ thereafter.
-  \item $r_T$ is $\max(0, T - 8^{\circ}\mathrm{C}) \cdot 1.5$,
-        capped at $20$.
-  \item $r_H$ is $\max(0, H - 70\%) \cdot 0.5$, capped at $10$.
-  \item $r_G$ is $\max(0, G - G_{\text{baseline}}) \cdot 0.4$, capped
-        at $10$ (where $G_{\text{baseline}}$ is the cabinet's
-        recalibration baseline).
-  \item $r_V$ is the spot-coverage percentage divided by~5, capped at
-        $10$, applied only to products whose category supports visual
-        analysis (\texttt{fruit}, in this prototype).
-  \item $r_W$ is $5$ if the product's measured weight has dropped by
-        more than $50\%$ since registration (indicating that the
-        product has been mostly consumed) and $0$ otherwise.
+  \item $r_{\text{exp}}$ is zero when expiration is more than a week
+        away, ramps linearly to 40 as the expiration date is reached,
+        and remains at 40 thereafter.
+  \item $r_T = \max(0, T - 8^\circ\mathrm{C}) \cdot 1.5$, capped at 20.
+  \item $r_H = \max(0, H - 70\,\%) \cdot 0.5$, capped at 10.
+  \item $r_G = \max(0, G - G_{\text{baseline}}) \cdot 0.4$, capped at 10,
+        where $G_{\text{baseline}}$ is the cabinet's recalibration
+        baseline.
+  \item $r_V = \sigma / 5$, capped at 10, applied only to products
+        whose category supports visual analysis.
+  \item $r_W = 5$ if the measured weight has dropped by more than
+        50\,\% since registration, otherwise zero.
 \end{itemize}
 
-Each per-channel maximum is intentionally smaller than $100$ so that
-no single sensor channel can dominate the score: a high gas reading
-alone, for instance, is not sufficient to flag a product as
-\emph{Spoilage Risk}; the risk must be \emph{multi-channel}, which
-matches the intuition that food deterioration tends to manifest in
-more than one indicator simultaneously.
+Each per-channel cap is intentionally lower than 100 so that no
+single sensor channel can push a product into the Spoilage Risk
+band; the band is reached only when several channels coincide. This
+multi-channel requirement matches the observation that food
+deterioration typically manifests across multiple indicators
+simultaneously.
 
 The score is recomputed inside the Flutter application each time a
-sensor reading arrives, which gives the alert engine a current view of
-every registered product without persisting state across application
-restarts.
+sensor reading arrives. The alert engine reads the current score on
+each refresh, which avoids the need to persist scoring state across
+application restarts.

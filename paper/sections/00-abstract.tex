@@ -1,25 +1,28 @@
 \begin{abstract}
-Global household food waste continues to grow despite increasing
-awareness of its environmental and economic impact. Existing smart
-refrigerator and inventory systems typically focus on a single
-sensing modality and rarely combine product identification,
-environmental monitoring, and real-time mobile interaction in a
-single low-cost prototype. This work presents the
-\emph{Smart Inventory and Automated Food Tracking Module}, a cabinet
-prototype that integrates four HX711-amplified load cells for
-shelf-weight measurement, a DHT11 sensor for temperature and humidity,
-an MQ135 sensor for indicative gas observation, an ESP32-CAM module
-for QR-based product registration, and an LED illumination subsystem
-for improved camera readability. A Python serial-to-HTTP bridge
-exposes the Arduino Uno's sensor output as a local web endpoint
-consumed by a cross-platform Flutter mobile dashboard, which displays
-live readings, tracks registered products with expiration data, and
-generates alerts. A pixel-level RGB analysis routine provides a
-lightweight, transparent visual ripeness estimate for bananas without
-requiring machine-learning hardware. Demonstration sessions confirmed
-weight, environmental, identification, and visualization functions
-operating concurrently inside a single low-cost prototype. The work
-contributes a reproducible reference design and an honest set of
-limitations that we believe are useful both to follow-on research and
-to similar undergraduate-level prototyping efforts.
+Household food waste accounts for the largest share of global food
+losses and continues to grow despite increased public awareness.
+Existing smart-refrigerator and inventory-monitoring systems
+typically optimise a single sensing modality, and few combine
+product identification, environmental monitoring, and real-time
+mobile interaction within one low-cost reference design. This paper
+presents a cabinet-scale prototype that integrates four 50\,kg load
+cells with an HX711 amplifier for shelf-weight estimation, a DHT11
+sensor for temperature and humidity, an MQ135 sensor for indicative
+gas observation, an AI Thinker ESP32-CAM for QR-based product
+registration, and an LED illumination subsystem driven through a
+MOSFET stage. Sensor output from an Arduino Uno is transported over
+USB to a Python bridge that exposes the readings as a CORS-enabled
+local HTTP endpoint, which is consumed by a cross-platform Flutter
+application providing dashboard, camera, product, alert, and
+configuration views. A tiled multi-QR routine recovers several
+product codes from a single camera capture, and a pixel-level RGB
+analysis yields an interpretable estimate of banana surface
+spotting without dependence on machine-learning inference.
+Demonstration sessions confirmed concurrent operation of all
+subsystems with end-to-end latency below one second between the
+microcontroller and the mobile dashboard. Limitations, particularly
+with respect to lightweight-product detection and MQ135 baseline
+drift, are documented alongside the qualitative results. The
+complete firmware, bridge, and application source are publicly
+archived for reproducibility.
 \end{abstract}

@@ -1,49 +1,40 @@
-% This section documents the specific contribution of each author so
-% that any reader, reviewer, or future inquiry into authorship can
-% verify the work against the project's public git history.
+% Per-author contribution record, consistent with the project's
+% public git history (46 commits attributed to krcgoktug between
+% 2026-05-17 and 2026-06-26).
 
 \textbf{Göktuğ Karaca} (joint first author, corresponding author)
-designed the overall system architecture; authored the entire embedded
-firmware for the Arduino~Uno sensor node (including the DHT11,
-MQ135, and HX711 integration and the JSON-line serial protocol) and
-the ESP32-CAM camera node (including the dual-port HTTP server, MJPEG
-streaming, and the QR-friendly camera initialization); implemented the
-Python USB-serial-to-HTTP bridge in its entirety; implemented the
-entire Flutter cross-platform mobile and web application, including
-all five screens (Dashboard, Camera, Products, Alerts, Settings),
-their state management, the local sensor service, the camera streaming
-layer, the in-memory product store, and the alert engine; designed
-the tiled multi-QR decoder, the RGB-pixel banana ripeness classifier,
-and the rule-based risk score model; configured the GitHub Pages and
-local-server deployment pipeline; and authored the methodology,
-implementation, algorithms, and results sections of this manuscript.
-Authorship of all firmware, bridge, and application code is
-independently verifiable from the project's git history (46 commits
-attributed to \texttt{krcgoktug} between 2026-05-17 and 2026-06-26)
-and from the Software Heritage Archive snapshot referenced in the
-Data and Code Availability section.
+designed the overall system architecture, authored the entire
+embedded firmware for the Arduino Uno sensor node and the AI Thinker
+ESP32-CAM camera node, implemented the Python USB-to-HTTP bridge,
+and developed the cross-platform Flutter mobile and web application
+including the Dashboard, Camera, Products, Alerts, and Settings
+screens, their state management, the local sensor service, the
+camera streaming layer, the in-memory product store, and the alert
+engine. He further developed the tiled multi-QR recognition routine,
+the pixel-level RGB ripeness classifier, the per-product risk-score
+model, and the GitHub Pages and local-server deployment pipeline. He
+authored the Methodology, Implementation, Algorithms, and Results
+sections of this manuscript. The authorship of all firmware, bridge,
+and application source is independently verifiable from the project's
+git history.
 
 \textbf{Sıla Özgel} (joint first author) contributed to system
-integration testing, hardware assembly verification, and demonstration
-preparation. S.~Ö. co-authored the Introduction, Related Work, and
-Discussion sections of the manuscript, and reviewed and approved the
-final implementation choices.
+integration testing, hardware-assembly verification, and demonstration
+preparation, and co-authored the Introduction, Related Work, and
+Discussion sections.
 
-\textbf{Ezgi Erdoğan} (joint first author) contributed to the
-ESP32-CAM hardware integration, QR-code design validation, and
-prototype demonstration testing. E.~E. co-authored portions of the
-Related Work section and the Conclusion, and contributed to manuscript
-review.
+\textbf{Ezgi Erdoğan} (joint first author) contributed to ESP32-CAM
+hardware integration, QR-code design validation, and prototype
+demonstration testing, and co-authored portions of the Related Work
+section and the Conclusion.
 
-\textbf{Hilal Bizimyer, Defne Kaya, Nehir Okutur, Züleyha Gönül,} and
-\textbf{Ece Simay Ayverdi} contributed to project documentation
-activities, the preliminary technical report from which portions of
-the System Design background discussion are derived, and literature
-review during the early planning stage.
+\textbf{Hilal Bizimyer}, \textbf{Defne Kaya}, \textbf{Nehir Okutur},
+\textbf{Züleyha Gönül}, and \textbf{Ece Simay Ayverdi} contributed
+to project documentation activities and to the preliminary technical
+report from which portions of the System Design background discussion
+are derived, and supported the literature review during the early
+planning stage.
 
-All authors reviewed the final version of this manuscript and
-confirmed its accuracy with respect to their individual contributions
-prior to submission. Disagreements regarding the description of any
-contribution were resolved before submission; an explicit 48-hour
-written-approval window was offered to all authors and the manuscript
-proceeded with documented consent.
+All authors reviewed the final version of this manuscript prior to
+submission and confirmed its accuracy with respect to their
+individual contributions.
