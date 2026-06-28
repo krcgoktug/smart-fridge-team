@@ -1,14 +1,111 @@
-\section{Results}
+\section{Demonstration Results}
 \label{sec:results}
 
-% TODO: Author Day 2-4 deliverable.
-% Content to draw from:
-%   - REVIZE Smart Inventory report (already in our hands, co-authored)
-%   - Architecture details in private team repo /docs/architecture.md
-%   - Wiring details in /docs/wiring.md
-%   - Code in /firmware/, /bridge/, /mobile/smart_fridge_app/
-%   - Real sensor data from session transcript (27.6 C, 62% humidity,
-%     gas value 43, weight up to 247.45 g, banana spotting 30.6%)
-%   - App screenshots in /paper-assets/app-screens/
+This section presents qualitative results obtained during
+demonstration sessions of the assembled prototype. The reported
+sessions used the calibrated load-cell subsystem against a known
+reference mass, the DHT11 and MQ135 sensors in ambient indoor
+conditions, the ESP32-CAM running the dual-port HTTP servers, and the
+Flutter web build polling the bridge once per second. We emphasize
+that the results below are from prototype-level demonstrations and not
+from controlled long-duration deployments; the system was designed
+explicitly as a reproducible reference design, and the discussion in
+Section~\ref{sec:discussion} documents the limitations honestly.
 
-\textit{[Pending: detailed content for this section is being prepared for the Day 2-4 deliverable.]}
+\subsection{Weight Subsystem Calibration and Performance}
+
+After deriving a calibration factor of $20.626$ from a single-purpose
+calibration sketch using a reference 1~kg test mass, the integrated
+load-cell subsystem was exercised across several known masses inside
+the cabinet. With the cabinet stationary on a level surface, repeated
+measurements of a 10~kg reference load remained between 9.8~kg and
+10.0~kg, with the small residual variation attributable to platform
+flexure under the load cells and to load-cell creep.
+
+Two further qualitative observations were repeatedly confirmed:
+(i)~product placement and removal were detected reliably for
+products with a stable bearing surface and a mass of roughly 50~g or
+greater, and (ii)~very light products (e.g.\ a folded piece of paper)
+were not reliably detected, because their signal was within the noise
+band produced by ambient vibration. A representative reading near the
+detection threshold was 0.97~g (Listing~\ref{lst:bridgelog}), which
+reflects the system correctly observing a small perturbation that
+does not correspond to a registered product.
+
+\subsection{Environmental Monitoring}
+
+During an indoor demonstration session, the DHT11 reported between
+27.4~$^{\circ}$C and 27.8~$^{\circ}$C and between 61\% and 63\%
+relative humidity over the course of approximately ten minutes
+without active climate control. The MQ135 reported analog values in
+the 41--46 range over the same window, with brief excursions toward
+46 when a hand was held close to the sensor. These observations
+confirm the firmware's basic responsiveness to changes in the
+cabinet's air composition, while supporting our position that the
+MQ135 channel should be treated as a \emph{trend indicator} rather
+than a calibrated gas-concentration measurement
+(Section~\ref{sec:impl-fw}).
+
+\subsection{Mobile Application Behavior}
+
+Figure~\ref{fig:app} captures the application during a representative
+demonstration session. The Dashboard (panel~a) renders the four
+sensor cards, the registered banana product, and a summary of the
+two active alerts. The Camera screen (panel~b) overlays the live MJPEG
+stream from the ESP32-CAM with the output of the in-frame banana
+classifier, which on the captured frame reported
+$\sigma = 30.6\%$ spot coverage, labeled \emph{Spotting -- light
+spotting, still consumable}. The Products screen (panel~c) renders
+the registered banana with a three-day-until-expiration status band
+and the corresponding \emph{Expiring Soon} chip; the Alerts screen
+(panel~d) aggregates the two automatically generated alerts (one for
+the upcoming expiration and one indicating the offline sensor board);
+and the Settings screen (panel~e) shows the
+\texttt{http://localhost:8787} bridge URL configuration and the
+\emph{Not configured} Firebase status that places the application in
+its intended in-memory fallback mode.
+
+\subsection{Bridge and End-to-End Operation}
+
+Listing~\ref{lst:bridgelog} reproduces a short window of bridge log
+output observed during the session. Each \texttt{[serial]} line
+corresponds to one decoded JSON record produced by the Arduino Uno
+and translated into the bridge's internal state record; the
+\texttt{[http]} startup line confirms that the bridge is exposing
+its endpoint on the expected port. During the same window, the
+mobile application polled \texttt{GET /sensors} once per second and
+the bridge returned a representative record of
+\begin{lstlisting}
+{"temperature":27.7,"humidity":63.0,
+ "gasValue":42,"weight":0,
+ "updatedAt":1781692341,"online":true}
+\end{lstlisting}
+which the Dashboard rendered without any intervening cache, confirming
+the end-to-end path Arduino~$\to$~bridge~$\to$~mobile application
+during operation.
+
+\subsection{Multi-QR Decoding}
+
+The tiled multi-QR decoder was exercised on printed A4 sheets of
+QR stickers placed at varied positions and orientations within the
+ESP32-CAM's field of view. Up to four distinct QR codes were recovered
+from a single capture under cabinet illumination, with the per-frame
+runtime remaining under 200~ms on a midrange Android device. The
+practical takeaway is that the multi-QR pipeline removes the need for
+the user to scan stickers individually, which is the workflow
+penalty that motivates this work
+(Section~\ref{sec:algo-qr}).
+
+\subsection{Visual Spoilage Estimation}
+
+The pixel-level banana classifier produced consistent, reproducible
+spot-coverage percentages across captures of the same banana taken
+within seconds of each other. As bananas progressed from yellow toward
+heavier surface spotting over a multi-day window, the reported
+percentage increased monotonically, with the reported stage label
+transitioning from \emph{Fresh} to \emph{Spotting} and (in extended
+informal observation) eventually toward \emph{Spoiling}. The classifier
+remains intentionally transparent: the same input image will always
+produce the same output, which makes its behavior auditable and
+suitable as a baseline against which future model-based classifiers
+can be compared.

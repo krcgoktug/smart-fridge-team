@@ -1,14 +1,169 @@
 \section{System Design}
 \label{sec:systemdesign}
 
-% TODO: Author Day 2-4 deliverable.
-% Content to draw from:
-%   - REVIZE Smart Inventory report (already in our hands, co-authored)
-%   - Architecture details in private team repo /docs/architecture.md
-%   - Wiring details in /docs/wiring.md
-%   - Code in /firmware/, /bridge/, /mobile/smart_fridge_app/
-%   - Real sensor data from session transcript (27.6 C, 62% humidity,
-%     gas value 43, weight up to 247.45 g, banana spotting 30.6%)
-%   - App screenshots in /paper-assets/app-screens/
+This section describes the high-level architecture of the proposed
+Smart Inventory and Automated Food Tracking Module and justifies the
+component-level decisions that shape the prototype.
 
-\textit{[Pending: detailed content for this section is being prepared for the Day 2-4 deliverable.]}
+\subsection{Architectural Overview}
+
+The system is organized as four cooperating subsystems, each chosen to
+keep unit cost low while preserving real-time visibility of the entire
+cabinet:
+
+\begin{enumerate}
+  \item A \textbf{sensor node} based on the Arduino Uno that reads
+        temperature and humidity (DHT11), gas-trend (MQ135), and
+        shelf weight via four load cells through an HX711 24-bit
+        analog-to-digital converter~\cite{hx711datasheet}, and emits
+        the combined state every $\approx\!3$ seconds as a JSON line
+        on its USB serial port.
+  \item A \textbf{camera node} based on the AI Thinker ESP32-CAM that
+        joins the local Wi-Fi network, exposes a JPEG-capture endpoint
+        on port 80 and an MJPEG live-stream endpoint on port 81, and
+        provides illumination for cabinet contents through a
+        MOSFET-switched LED strip controlled from the Arduino's D9
+        digital pin.
+  \item A \textbf{USB-serial-to-HTTP bridge} written in Python and
+        executed on the user's host machine. The bridge consumes the
+        Arduino Uno's JSON stream on a CH340 serial port, maintains
+        the latest validated reading in memory, and exposes the state
+        on \texttt{http://localhost:8787/sensors} with a permissive
+        CORS header so that a browser-side mobile application can poll
+        it directly. The bridge also accepts \texttt{POST /tare} and
+        \texttt{POST /recalibrate\_gas} requests that round-trip back
+        through the serial link as single-character commands to the
+        Arduino sketch.
+  \item A \textbf{cross-platform Flutter application}, target-built
+        for Android and for the web, that reads the bridge HTTP
+        endpoint on a one-second timer, fetches MJPEG frames from the
+        ESP32-CAM, decodes QR codes from the camera feed with an
+        in-frame tiled multi-QR routine, maintains an in-memory
+        product list with per-item expiration metadata, and emits
+        rule-based alerts.
+\end{enumerate}
+
+Figure~\ref{fig:architecture} summarizes the topology and the data
+exchanged between subsystems. The Arduino Uno deliberately does not
+participate directly in the wireless network: it does not host Wi-Fi,
+HTTP, or Firebase clients. We chose this decoupling because the Uno's
+ATmega328P is severely RAM-constrained (2~kB), and pairing it with
+Wi-Fi-capable shields would have added cost and complicated firmware
+without measurable functional gain in our deployment context. The
+USB-serial-to-HTTP bridge resolves the gap with a few hundred lines of
+Python and gives consumers an HTTP API rather than a low-level
+protocol.
+
+\begin{figure*}[t]
+\centering
+\fbox{\parbox{0.94\textwidth}{\centering \footnotesize \ttfamily
+\begin{tabular}{c}
+$[$Arduino Uno + DHT11 + MQ135 + HX711 + 4 load cells$]$\\
+$|$\quad USB serial (9600 baud, JSON lines)\\
+$\downarrow$\\
+$[$Python USB-serial-to-HTTP bridge --- localhost:8787/sensors $|$ /tare $|$ /recalibrate\_gas$]$\\
+$|$\quad HTTP (JSON, CORS-enabled)\\
+$\downarrow$\\
+$[$Flutter mobile / web application: Dashboard $|$ Camera $|$ Products $|$ Alerts $|$ Settings$]$\\
+$\uparrow$\\
+$|$\quad HTTP (MJPEG stream + JPEG capture)\\
+$[$ESP32-CAM (AI Thinker) --- port 80: /capture, port 81: /stream$]$
+\end{tabular}
+}}
+\caption{Architectural overview. The Arduino Uno acts as the principal
+sensor node and emits JSON lines over USB. A small Python bridge
+converts the serial stream into a CORS-enabled local HTTP endpoint
+consumed by the Flutter dashboard. The ESP32-CAM operates as an
+independent Wi-Fi camera node serving JPEG captures and an MJPEG live
+stream directly to the same dashboard.}
+\label{fig:architecture}
+\end{figure*}
+
+\subsection{Component Selection Rationale}
+
+\subsubsection{Microcontroller (Arduino Uno)}
+The choice of an Arduino Uno over an ESP32 sensor node was made to
+keep the firmware educationally accessible (Wiring/C++, single file),
+to leverage the mature DHT and HX711 community libraries, and to
+deliberately separate sensing from networking. The trade-off is the
+loss of native Wi-Fi capability on the sensor side, which we recover
+at the bridge layer.
+
+\subsubsection{Weight subsystem (HX711 + four load cells)}
+The HX711 is the de facto choice for low-cost weighing
+applications~\cite{hx711datasheet}. We arrange four 50~kg-rated load
+cells under a 47~cm $\times$ 36~cm wooden shelf to distribute the load
+evenly. The four cells are wired in a single Wheatstone-bridge
+configuration and connected to the Uno through the HX711's
+\texttt{DT} and \texttt{SCK} pins on D4 and D5 respectively. The
+firmware exposes a runtime tare command (\texttt{t}/\texttt{T}) so
+that the user can rezero the scale after physically rearranging items,
+and maintains a soft baseline-drift compensator that absorbs the small
+negative excursions caused by load-cell creep without affecting the
+ability to detect true product placements.
+
+\subsubsection{Temperature and humidity (DHT11)}
+The DHT11 provides $\pm 2^{\circ}$C / $\pm 5\%$ relative humidity
+accuracy~\cite{adafruitdht}, which is adequate to detect the
+post-shopping warm-up window (the period after a refrigerated product
+is placed in a closed cabinet at ambient temperature) and to indicate
+gross humidity changes that affect product shelf life. We read the
+DHT11 every cycle but discard transient \texttt{NaN} reads and emit
+the previous valid sample if the current cycle fails --- a common
+robustness pattern for this sensor.
+
+\subsubsection{Gas observation (MQ135)}
+The MQ135 module is read through analog pin A0 with an in-firmware
+exponential moving-average filter, which we found necessary to absorb
+the baseline drift that low-cost MQ135 modules exhibit during their
+initial warm-up period (the first 30--60 seconds after power-on). We
+do not claim absolute gas-concentration measurement; the MQ135 channel
+is used as a \emph{trend indicator} for elevated VOC levels inside the
+cabinet. A \texttt{POST /recalibrate\_gas} endpoint on the bridge lets
+the user reset the baseline at runtime if the cabinet is opened.
+
+\subsubsection{Camera node (ESP32-CAM AI Thinker)}
+We chose the AI Thinker variant because it is the most widely available
+ESP32-CAM module in the Turkish hobbyist supply chain, ships with the
+OV2640 sensor, and is supported by an extensive community firmware
+ecosystem~\cite{esp32cam}. The ESP32-CAM hosts two HTTP servers on
+different ports: port 80 serves single JPEG captures used for QR
+decoding and visual ripeness analysis, and port 81 serves an MJPEG
+live stream consumed by the Camera screen of the mobile application.
+Keeping the two endpoints on different ports allowed independent
+quality settings (320$\times$240 at low compression for captures,
+640$\times$480 at moderate compression for the stream) and prevented
+single-request stalls.
+
+\subsubsection{Mobile application (Flutter)}
+The application is implemented in Flutter so that a single codebase
+serves both an Android target (for use as a phone dashboard) and a web
+target (for use on the same laptop that runs the bridge). The web
+build is published from the project's \texttt{docs/} directory and
+demonstrates the user interface offline, even when no sensors are
+attached --- a design decision that proved useful for demonstrations
+in environments without the full hardware available.
+
+\subsection{Data Exchange Formats}
+
+The Arduino sketch emits one JSON line per cycle on its serial port,
+of the form:
+\begin{lstlisting}
+{"temperature":27.6,"humidity":62.0,
+ "gasValue":43,"weight":247.45,
+ "riskScore":10}
+\end{lstlisting}
+
+The bridge parses each line, validates the schema, stamps it with the
+host's wall-clock time, and returns the latest record as a slightly
+extended JSON document on \texttt{GET /sensors}:
+\begin{lstlisting}
+{"temperature":27.7,"humidity":63.0,
+ "gasValue":42,"weight":0,
+ "updatedAt":1781692341,"online":true}
+\end{lstlisting}
+
+The Flutter application polls this endpoint once per second and
+treats \texttt{online:false} as an out-of-band reset condition that
+causes the Dashboard's sensor cards to display em-dashes and the
+Alerts screen to surface an "ESP32 Sensor Board Offline" notice.

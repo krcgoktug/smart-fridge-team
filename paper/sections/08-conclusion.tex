@@ -1,14 +1,42 @@
 \section{Conclusion}
 \label{sec:conclusion}
 
-% TODO: Author Day 2-4 deliverable.
-% Content to draw from:
-%   - REVIZE Smart Inventory report (already in our hands, co-authored)
-%   - Architecture details in private team repo /docs/architecture.md
-%   - Wiring details in /docs/wiring.md
-%   - Code in /firmware/, /bridge/, /mobile/smart_fridge_app/
-%   - Real sensor data from session transcript (27.6 C, 62% humidity,
-%     gas value 43, weight up to 247.45 g, banana spotting 30.6%)
-%   - App screenshots in /paper-assets/app-screens/
+This paper presented the design, implementation, and qualitative
+evaluation of the Smart Inventory and Automated Food Tracking Module,
+a low-cost cabinet prototype that combines shelf-weight measurement,
+temperature and humidity monitoring, gas-trend observation, QR-based
+product registration, LED-assisted illumination, and a transparent
+pixel-level banana ripeness classifier in a single integrated system.
+The prototype is implemented around an Arduino Uno sensor node, an
+AI Thinker ESP32-CAM camera node, a Python USB-serial-to-HTTP bridge,
+and a cross-platform Flutter mobile and web application.
 
-\textit{[Pending: detailed content for this section is being prepared for the Day 2-4 deliverable.]}
+The principal contributions reported in this work are
+(i)~the integrated four-modality cabinet architecture,
+(ii)~the CORS-enabled local HTTP bridge that removes the need for a
+Wi-Fi-capable sensor microcontroller,
+(iii)~the tiled multi-QR decoder that recovers multiple stickers from
+a single camera capture,
+(iv)~the transparent, training-free RGB ripeness classifier intended
+as an honest baseline against which CNN-based detectors can be
+compared, and
+(v)~the openly archived implementation and reproducibility
+documentation, preserved in the Software Heritage Archive with a
+persistent identifier so that any reader can independently verify the
+codebase used to produce the results.
+
+Demonstration sessions confirmed concurrent operation of all
+subsystems, end-to-end latency well below one second between the
+Arduino's serial output and the Flutter Dashboard, reliable weight
+detection above approximately 50~g, and reproducible visual ripeness
+estimation. The honest set of limitations documented in
+Section~\ref{sec:discussion} maps directly to future work: hardware
+improvements to support lighter products, a learned visual classifier
+for foods beyond bananas, a multi-shelf architecture, and a Firebase
+or equivalent back end for cross-device synchronization.
+
+The system is openly available under an educational license. We
+believe both the integrated reference design and the explicit, honest
+limitations are useful contributions to the household
+food-waste-reduction design space, and we look forward to follow-on
+work that builds on the public codebase.

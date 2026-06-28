@@ -1,14 +1,108 @@
-\section{Discussion}
+\section{Discussion and Limitations}
 \label{sec:discussion}
 
-% TODO: Author Day 2-4 deliverable.
-% Content to draw from:
-%   - REVIZE Smart Inventory report (already in our hands, co-authored)
-%   - Architecture details in private team repo /docs/architecture.md
-%   - Wiring details in /docs/wiring.md
-%   - Code in /firmware/, /bridge/, /mobile/smart_fridge_app/
-%   - Real sensor data from session transcript (27.6 C, 62% humidity,
-%     gas value 43, weight up to 247.45 g, banana spotting 30.6%)
-%   - App screenshots in /paper-assets/app-screens/
+The demonstration sessions reported in Section~\ref{sec:results}
+support several broader observations about the proposed module.
 
-\textit{[Pending: detailed content for this section is being prepared for the Day 2-4 deliverable.]}
+\subsection{What the Prototype Demonstrates}
+
+The integrated prototype demonstrates that a single low-cost
+microcontroller node, paired with a small Python bridge and a
+cross-platform Flutter application, can deliver continuous visibility
+into the four sensing modalities that smart-refrigerator systems most
+often address: weight, temperature/humidity, gas trend, and visual
+ripeness. The architectural separation between the sensor node (an
+Arduino Uno with no networking responsibilities) and the camera node
+(an ESP32-CAM with no sensing responsibilities) kept the firmware on
+each device simple and self-contained, which is valuable both for
+educational use and for follow-on research that wishes to replace
+individual subsystems without disturbing the rest.
+
+The end-to-end latency, observed during the bridge-log window in
+Section~\ref{sec:results}, was well below one second between a sensor
+reading appearing on the Arduino's serial port and the corresponding
+update propagating into the Flutter Dashboard. This margin is more
+than adequate for an inventory-monitoring use case where the
+underlying physical processes evolve over minutes to days.
+
+\subsection{Comparison with Related Work}
+
+Relative to camera-only smart-refrigerator
+systems~\cite{ericyang2022smartfridge,vadlamudi2025fridgesense}, the
+proposed prototype does not depend on a trained product classifier
+and therefore avoids the dataset and inference burden that such
+systems carry. Relative to RFID-based
+approaches~\cite{abhiram2025iotmonitor}, the proposed system does not
+require per-product tagging or a reader installed in the cabinet, and
+the per-product identification cost reduces to the cost of printing a
+small QR sticker. Relative to systems that focus on a single sensing
+modality~\cite{sarawathi2025spoilage,sarkar2024proactive,shetty2024monitoring},
+the proposed module combines four modalities and exposes them
+together through the same mobile interface, which improves
+multi-channel awareness of the cabinet's state.
+
+\subsection{Limitations}
+
+A number of limitations of the current implementation should be
+acknowledged honestly:
+
+\paragraph{Lightweight-product sensitivity}
+The load-cell subsystem is more reliable for products with a stable
+bearing surface and a mass of approximately 50~g or greater. Very
+light objects can be missed or generate noisy events because their
+signal falls inside the noise band produced by ambient vibration and
+load-cell creep. A more rigid shelf, a higher-grade load cell, and a
+running average filter with a longer window would improve this, at
+some cost in responsiveness.
+
+\paragraph{MQ135 baseline drift}
+The MQ135 is a useful trend indicator but not a calibrated
+gas-concentration sensor. Its baseline drifts significantly during the
+first 30--60~seconds after power-on, which the firmware absorbs with
+an exponential moving average and which the user can reset at runtime
+through the \texttt{/recalibrate\_gas} endpoint. We do not claim
+absolute gas concentrations, and any inference about spoilage based
+on MQ135 trends should be cross-checked with other channels.
+
+\paragraph{Visual classifier scope}
+The pixel-level RGB classifier is intentionally simple and is
+implemented for bananas only. Extending it to other fruits would
+require revisiting the color thresholds; extending it to general food
+items would benefit from a learned model, which is a natural avenue
+for follow-on work. Lighting variations inside the cabinet affect
+classifier sensitivity, although the LED-strip illumination
+substantially reduces this effect.
+
+\paragraph{Wi-Fi-only camera coupling}
+The ESP32-CAM is reachable only when both the host running the
+bridge and the camera are on the same local network. A field
+deployment outside the local network would require either an SSH
+tunnel, a port-forward, or a Firebase-mediated relay. The mobile
+application's Settings screen exposes the camera IP precisely so that
+the deployment can be reconfigured for different network topologies
+without recompilation.
+
+\paragraph{Single-cabinet, single-shelf prototype}
+The prototype monitors a single shelf. Extending to multiple shelves
+requires either additional load-cell-and-HX711 pairs (each on its own
+\texttt{DT/SCK} pin pair) or a chip-select mechanism. The firmware
+and bridge changes required are modest but were out of scope for the
+current prototype.
+
+\paragraph{Firebase integration ships disabled}
+The application has a Firebase Realtime Database integration that is
+wired in code but ships with placeholder credentials, so the deployed
+build operates in an in-memory mode by default. This is an explicit
+design choice to keep the prototype reproducible without an external
+account; the in-memory state survives in-session use but is reset when
+the application restarts. A production deployment would replace the
+placeholder \texttt{firebase\_options.dart} with credentials obtained
+through \texttt{flutterfire configure}.
+
+\paragraph{Demonstration-scale evaluation}
+The results reported in Section~\ref{sec:results} are obtained from
+prototype-level demonstration sessions and not from controlled
+longitudinal deployments. We position this work as a reproducible
+reference design and an honest baseline rather than a finished
+clinical-grade evaluation, and we believe both contributions are
+useful at this stage of the design space.
