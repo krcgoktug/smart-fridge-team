@@ -1,8 +1,8 @@
 <div align="center">
 
-## 👥 Yapanlar / Developers
+##  Takım Üyeleri / Team Members
 
-# 🌱 Sıla Özgel  ·  Göktuğ Karaca  ·  Ezgi Erdoğan 🌱
+#  Sıla Özgel  ·  Göktuğ Karaca  ·  Ezgi Erdoğan 
 
 </div>
 
