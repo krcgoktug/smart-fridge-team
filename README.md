@@ -1,3 +1,11 @@
+<div align="center">
+
+## 👥 Yapanlar / Developers
+
+# 🌱 Sıla Özgel  ·  Göktuğ Karaca  ·  Ezgi Erdoğan 🌱
+
+</div>
+
 # Zero Waste Smart Fridge
 
 > A real **IoT + computer-vision + mobile** university project. An Arduino Uno
